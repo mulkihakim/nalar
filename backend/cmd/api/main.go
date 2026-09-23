@@ -23,7 +23,7 @@ func main() {
 		jwtSecret = "nalar-default-secret-change-in-production"
 	}
 
-	gormDB, err := db.Connect(os.Getenv("DATABASE_URL"))
+	gormDB, err := db.Connect(db.GetDSN())
 	if err != nil {
 		log.Fatalf("failed to connect db: %v", err)
 	}
@@ -38,6 +38,8 @@ func main() {
 	userHandler := user.NewHandler(userSvc, authMiddleware, loginRateLimiter)
 
 	r := chi.NewRouter()
+	r.Use(middleware.CORS())
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 	})
