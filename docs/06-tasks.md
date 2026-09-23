@@ -6,9 +6,9 @@
 |---|---|---|
 | 1 | Backend | Auth + role, CRUD kelas/materi/ujian, endpoint pengerjaan (drop, confirm, progress), query analitik, seed data, unit test |
 | 2 | Web admin/asesor | Login, kelola user/kelas/materi/ujian, tabel hasil, log dengan identitas, analitik sosial versi staf |
-| 3 | Mobile siswa + polish | Login, daftar ujian, pilih mode, layar tap-to-select (lihat `03-flows.md` §1.4b), hasil, analitik sosial; README dan screenshot |
+| 3 | Mobile siswa + polish | Login, daftar ujian, pilih mode, layar tap-to-select (lihat `02-flows.md` §1.4b), hasil, analitik sosial; README dan screenshot |
 
-**Jika waktu mepet, potong dalam urutan ini:** F-17, F-16, F-15, F-14, tampilan detail per siswa di F-12 (lihat daftar fitur di `02-requirements.md`). Fitur F-01 sampai F-13 adalah inti demo.
+**Jika waktu mepet, potong dalam urutan ini:** F-17, F-16, F-15, F-14, tampilan detail per siswa di F-12 (lihat daftar fitur di `01-product.md` §B). Fitur F-01 sampai F-13 adalah inti demo.
 
 ## 2. Kriteria penerimaan (contoh — jadikan test/acceptance check)
 

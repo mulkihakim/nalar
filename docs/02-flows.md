@@ -1,20 +1,20 @@
-# 03. Alur dan Aturan Pengerjaan
+# 02. Alur dan Aturan Pengerjaan
 
-Prasyarat: `01-overview.md` (istilah domain), `02-requirements.md` (fitur terkait: F-06 s/d F-12, F-14).
-Terkait: `04-architecture.md` untuk kontrak endpoint yang dipanggil di setiap langkah.
+Prasyarat: `01-product.md` Bagian A (istilah domain) & Bagian B (fitur terkait: F-06 s/d F-12, F-14).
+Terkait: `03-architecture.md` untuk kontrak endpoint yang dipanggil di setiap langkah.
 
 ## 1. Alur mulai/lanjut sesi dan pengerjaan argumen
 
 1. Siswa membuka daftar ujian. Hanya ujian **aktif** yang siswa akses lewat kelasnya atau penugasan individu yang muncul.
 2. Siswa menekan sebuah ujian. Server memeriksa apakah siswa punya **sesi berstatus berjalan** pada ujian itu:
-   - **Tidak ada** (belum pernah, atau semua sesi sebelumnya sudah selesai): siswa memilih mode (`02-requirements.md` §2), lalu server membuat sesi baru, mengambil maksimal 3 argumen secara acak dari materi (`arguments_per_session`), dan menyimpannya sebagai session argument dengan urutan tetap.
+   - **Tidak ada** (belum pernah, atau semua sesi sebelumnya sudah selesai): siswa memilih mode (`01-product.md` §B.2), lalu server membuat sesi baru, mengambil maksimal 3 argumen secara acak dari materi (`arguments_per_session`), dan menyimpannya sebagai session argument dengan urutan tetap.
    - **Ada sesi berjalan**: siswa tetap diminta memilih mode.
      - Jika mode yang dipilih **sama** dengan mode sesi berjalan: langsung lanjutkan ke argumen pertama yang belum selesai. Riwayat argumen yang sudah dijawab benar pada sesi itu tidak hilang, dan subset argumennya tidak diacak ulang.
      - Jika mode yang dipilih **berbeda**: tampilkan konfirmasi "mode belajar akan diubah dari X ke Y, lanjutkan sesi ini?". Jika dikonfirmasi, `sessions.mode` diperbarui dan siswa melanjutkan ke argumen yang belum selesai (subset argumen tetap sama, progres tetap sama). Jika dibatalkan, siswa tetap di halaman daftar ujian.
 3. Siswa membaca materi, lalu masuk ke argumen pertama yang belum selesai pada sesi itu.
-4. Layar argumen, dengan indikator "Argumen X dari N" mengacu ke posisi dalam session argument (N maksimal 3). Tata letak dan interaksi **berbeda per platform**, tapi keduanya memanggil endpoint drop/confirm yang sama (lihat `04-architecture.md` §API):
+4. Layar argumen, dengan indikator "Argumen X dari N" mengacu ke posisi dalam session argument (N maksimal 3). Tata letak dan interaksi **berbeda per platform**, tapi keduanya memanggil endpoint drop/confirm yang sama (lihat `03-architecture.md` §3):
 
-   **4a. Web (mengikuti desain lama, drag and drop)**
+   **4a. Web (drag and drop)**
    - Claim di bagian atas.
    - Slot **Ground** di kiri dan slot **Warrant** di kanan. Satu panah dari ground ke claim, dan satu panah dari warrant yang menunjuk ke panah tersebut (warrant menjembatani ground dan claim).
    - Daftar opsi ground dan warrant di bawah slot masing-masing, masing-masing 4 opsi.
@@ -22,7 +22,7 @@ Terkait: `04-architecture.md` untuk kontrak endpoint yang dipanggil di setiap la
 
    **4b. Mobile (tap-to-select, bukan drag and drop)**
    - Claim di bagian atas.
-   - Slot **Ground** dan slot **Warrant** ditampilkan sebagai dua kartu kosong tersusun vertikal (ground lalu warrant), dengan placeholder "Pilih Ground" / "Pilih Warrant" saat kosong. Panah/diagram penghubung ground-warrant-claim pada desain lama **tidak dipakai** di mobile karena ruang layar terbatas.
+   - Slot **Ground** dan slot **Warrant** ditampilkan sebagai dua kartu kosong tersusun vertikal (ground lalu warrant), dengan placeholder "Pilih Ground" / "Pilih Warrant" saat kosong. Diagram visual penghubung ground-warrant-claim **tidak dipakai** di mobile karena ruang layar terbatas.
    - Daftar 4 opsi ground dan 4 opsi warrant **tidak ditampilkan langsung di layar**; opsi baru muncul saat slot terkait ditekan.
    - Tombol **Confirm**, aktif jika kedua slot terisi.
 5. Siswa mengisi slot, mekanismenya berbeda per platform:
@@ -34,7 +34,7 @@ Terkait: `04-architecture.md` untuk kontrak endpoint yang dipanggil di setiap la
    - Salah satu atau keduanya salah: siswa diberi tahu belum tepat (detail sesuai mode) dan boleh mencoba lagi tanpa batas.
 7. Setelah argumen terakhir dalam sesi itu selesai, sesi berstatus **selesai** dan siswa melihat ringkasan hasil (§3 di bawah). Siswa bisa memulai sesi baru (percobaan baru) kapan pun, dengan subset argumen yang baru diacak.
 8. Kebenaran jawaban **selalu dinilai di server**. Field `is_correct` tidak dikirim ke klien kecuali sesuai aturan mode.
-9. Timer pada desain lama dihapus.
+9. Tidak ada batasan waktu / timer pengerjaan.
 10. Jika koneksi putus atau aplikasi ditutup di tengah sesi, status sesi tetap **berjalan** dan mengikuti aturan poin 2 saat diakses kembali.
 
 ## 2. Log dan analitik sosial
@@ -42,7 +42,7 @@ Terkait: `04-architecture.md` untuk kontrak endpoint yang dipanggil di setiap la
 ### 2.1 Definisi dasar
 - **Percobaan (attempt):** satu kali opsi di-drop ke slot. Satu baris di `attempt_logs`.
 - **Kelompok pembanding:** semua siswa yang memiliki minimal satu sesi pada ujian yang sama.
-- Perhitungan **X** (percobaan siswa sendiri) dan agregat kelompok menggabungkan attempt log dari **seluruh sesi** siswa pada ujian itu, bukan hanya sesi yang sedang berjalan (lihat asumsi A9 di `05-rules.md`).
+- Perhitungan **X** (percobaan siswa sendiri) dan agregat kelompok menggabungkan attempt log dari **seluruh sesi** siswa pada ujian itu, bukan hanya sesi yang sedang berjalan (lihat asumsi A9 di `04-rules-design.md`).
 - Perhitungan dilakukan di backend per ujian, per argumen, per opsi.
 
 ### 2.2 Tampilan Monitoring (setiap argumen selesai, mode analitik sosial)
@@ -57,7 +57,7 @@ Y = round(total_percobaan_semua_siswa_pada_opsi / jumlah_siswa_unik_yang_memilih
 
 Contoh: opsi dipilih 3 siswa dengan percobaan 2, 3, dan 4. Total 9, siswa unik 3, sehingga Y = 3. Siswa yang memilih 2 kali melihat **2:3**.
 
-`Y` bukan rata-rata seluruh siswa di kelas, karena penyebutnya hanya siswa unik yang pernah memilih opsi tersebut. Pembulatan mengikuti sistem lama (setengah dibulatkan menjauhi nol, setara `math.Round` di Go).
+`Y` bukan rata-rata seluruh siswa di kelas, karena penyebutnya hanya siswa unik yang pernah memilih opsi tersebut. Pembulatan menggunakan aturan setengah dibulatkan menjauhi nol (round half away from zero, setara `math.Round` di Go).
 
 ### 2.3 Tampilan Analysis (setelah semua argumen selesai, mode analitik sosial)
 Untuk setiap opsi pada setiap argumen, tampilkan **A : B**.

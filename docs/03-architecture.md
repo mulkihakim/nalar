@@ -1,6 +1,6 @@
-# 04. Architecture — Model Data & API
+# 03. Architecture — Model Data & API
 
-Prasyarat: `01-overview.md` untuk istilah domain.
+Prasyarat: `01-product.md` Bagian A untuk istilah domain.
 
 ## 1. Model data
 
@@ -124,7 +124,7 @@ erDiagram
 | Siswa | `GET /sessions/:id/analysis`, `GET /my/exams/:id/sessions` | Siswa |
 | Staf | `GET /exams/:id/results`, `GET /exams/:id/logs`, `GET /exams/:id/analysis` | Admin, asesor |
 
-Endpoint `drops` dan `confirm` di atas dipakai oleh **web dan mobile dengan payload yang sama** — lihat `03-flows.md` §1 langkah 5 untuk perbedaan interaksi UI yang memicunya.
+Endpoint `drops` dan `confirm` di atas dipakai oleh **web dan mobile dengan payload yang sama** — lihat `02-flows.md` §1 langkah 5 untuk perbedaan interaksi UI yang memicunya.
 
 Body `confirm` membawa `ground_option_id` dan `warrant_option_id`. Server memvalidasi bahwa kedua opsi milik argumen tersebut.
 

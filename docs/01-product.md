@@ -1,0 +1,97 @@
+# 01. Product — Overview & Requirements Nalar
+
+> File ini memuat overview produk dan daftar requirements fitur. Selalu jadi konteks dasar — baca sebelum mengerjakan fitur apa pun.
+
+---
+
+## Bagian A — Overview
+
+### A.1 Ringkasan
+
+Nalar adalah platform **latihan argumentasi berbasis model Toulmin**. Asesor menyusun materi bacaan beserta argumen (claim). Siswa menyusun argumen dengan memilih *ground* dan *warrant* yang tepat untuk sebuah *claim* (drag and drop di web, tap-to-select di mobile — detail di `02-flows.md`). Sistem mencatat setiap percobaan memilih opsi, lalu menampilkan hasil dan perbandingan pilihan antarsiswa secara anonim (analitik sosial).
+
+Ini **latihan belajar, bukan ujian formal**. Tidak ada nilai numerik atau timer. Siswa boleh mengerjakan ujian yang sama berkali-kali sebagai latihan, dan setiap percobaan mengambil subset argumen secara acak (maksimal 3) dari materi. Siswa lanjut ke argumen berikutnya setelah menemukan jawaban yang benar. Kata "ujian" tetap dipakai sebagai istilah untuk satu paket latihan yang diberikan ke siswa.
+
+### A.2 Tujuan dan non-tujuan
+
+**Tujuan**
+- Siswa dapat menyelesaikan satu sesi latihan penuh dari HP (Android).
+- Admin dan asesor dapat melihat siapa memilih opsi apa, dan berapa kali.
+- Repo portofolio yang menunjukkan web + mobile + backend, dengan test untuk logika inti.
+
+**Non-tujuan (versi ini)**
+Tipe ujian, konsep eksperimen (kontrol/perlakuan, pre/post), adaptive learning, kategori peserta, skor perilaku (steps/waktu), timer, nilai numerik/ranking antar percobaan, gamifikasi, chatbot/AI, deteksi ekspresi wajah, deploy, Docker, mode offline, multi-bahasa.
+
+> Kalau agent coding diminta menambahkan salah satu hal di atas, itu di luar scope proyek ini — konfirmasi dulu ke pemilik proyek sebelum mengerjakan.
+
+### A.3 Peran dan hak akses
+
+| Kemampuan | Admin | Asesor | Siswa |
+|---|---|---|---|
+| Kelola akun asesor | Ya | - | - |
+| Buat akun siswa | Ya | Ya | - |
+| Ubah/nonaktifkan akun siswa | Semua | Yang ia buat | - |
+| Kelola kelas dan anggota kelas | Semua | Milik sendiri | - |
+| Kelola materi dan argumen | Semua | Milik sendiri | - |
+| Kelola ujian (materi, status, akses) | Semua | Milik sendiri | - |
+| Lihat hasil dan log dengan identitas | Semua | Ujian miliknya | - |
+| Lihat daftar ujian yang boleh diakses | - | - | Ya |
+| Mengerjakan ujian | - | - | Ya |
+| Lihat hasil sendiri dan analitik sosial anonim | - | - | Ya |
+
+Satu siswa boleh menjadi anggota banyak kelas.
+
+### A.4 Konsep domain (glosarium)
+
+Istilah ini dipakai konsisten di seluruh dokumentasi dan di kode (nama tabel, endpoint, variabel) — pakai istilah yang sama, jangan diterjemahkan ulang secara bebas.
+
+- **Material:** bacaan/topik. Memiliki beberapa Argument yang berurutan.
+- **Argument:** satu *claim* + **4 opsi ground** + **4 opsi warrant**. Tepat 1 ground benar dan 1 warrant benar.
+- **Class:** kelompok siswa yang dimiliki satu asesor/admin.
+- **Exam:** menghubungkan satu Material dengan status aktif/nonaktif, daftar akses (kelas dan/atau siswa individu), dan `arguments_per_session` (default 3, jumlah maksimum argumen yang diambil secara acak dari materi untuk satu sesi).
+- **Session:** satu **percobaan** siswa pada satu ujian. Siswa boleh membuat banyak sesi (belajar berkali-kali). Setiap sesi menyimpan subset argumen (maksimal 3, diacak) yang tetap sepanjang sesi itu, dan mode belajar yang dipilih. Hanya boleh ada **satu sesi berstatus berjalan** per (siswa, ujian) pada satu waktu; sesi baru hanya dibuat setelah sesi sebelumnya berstatus selesai.
+- **Session argument:** daftar argumen yang terpilih untuk satu sesi, beserta urutannya. Ditentukan sekali saat sesi dibuat dan tidak berubah meski sesi dilanjutkan nanti.
+- **Attempt log:** satu catatan setiap siswa men-*drop* (mengisi slot dengan) sebuah opsi ke slot jawaban. Istilah "drop" tetap dipakai secara konseptual di data/API meskipun di mobile interaksinya berupa tap-to-select, bukan drag-and-drop — lihat `02-flows.md`.
+- **Argument progress:** penanda argumen (dalam ruang lingkup sesi tertentu) yang sudah dijawab benar.
+
+Lihat `03-architecture.md` untuk bagaimana istilah-istilah ini dipetakan ke tabel database.
+
+---
+
+## Bagian B — Requirements
+
+### B.1 Fitur dan prioritas
+
+Prioritas: **Must** (wajib untuk demo), **Should** (penting tapi bisa dipotong jika waktu mepet), **Could** (nice-to-have). Urutan pemotongan jika waktu mepet ada di `06-tasks.md`.
+
+| ID | Fitur | Prioritas | Platform |
+|---|---|---|---|
+| F-01 | Login/logout, role-based access | Must | Semua |
+| F-02 | Admin kelola asesor; admin/asesor buat siswa | Must | Web |
+| F-03 | CRUD kelas dan anggota kelas | Must | Web |
+| F-04 | CRUD materi dan argumen (claim + 4 ground + 4 warrant, validasi) | Must | Web |
+| F-05 | CRUD ujian: pilih materi, aktif/nonaktif, atur akses kelas/siswa, atur `arguments_per_session` | Must | Web |
+| F-06 | Siswa melihat daftar ujian yang boleh diakses | Must | Mobile |
+| F-07 | Siswa memilih mode, lalu server membuat sesi baru (subset argumen acak) atau melanjutkan sesi berjalan | Must | Mobile + backend |
+| F-08 | Pengerjaan: baca materi, susun argumen dengan tap-to-select (ketuk slot → pilih opsi di bottom sheet), Confirm, lanjut setelah benar | Must | Mobile |
+| F-09 | Pencatatan log setiap drop | Must | Backend |
+| F-10 | Sesi berjalan bisa dilanjutkan setelah keluar/gangguan jaringan, termasuk konfirmasi jika mode belajar diubah | Must | Mobile + backend |
+| F-11 | Mode standar, bantuan, dan analitik sosial | Must | Mobile + backend |
+| F-12 | Hasil sendiri untuk siswa; hasil semua siswa untuk admin/asesor | Must | Mobile + web |
+| F-13 | Log percobaan dengan identitas untuk admin/asesor | Must | Web |
+| F-14 | Siswa mengerjakan lewat web (reuse API yang sama) | Should | Web |
+| F-15 | Urutan opsi diacak, stabil per sesi | Should | Backend |
+| F-16 | Ekspor hasil/log ke CSV | Should | Web |
+| F-17 | Impor siswa lewat CSV, mode gelap | Could | Web |
+
+> Catatan F-08 vs F-14: layar pengerjaan di mobile pakai tap-to-select (lihat `02-flows.md` §1.4b), sedangkan versi web (F-14) memakai drag-and-drop (§1.4a) yang lebih optimal untuk layar besar. Endpoint backend sama untuk keduanya.
+
+### B.2 Mode belajar
+
+| Mode | Perilaku |
+|---|---|
+| **Standar** | Siswa tidak diberi tahu mana opsi yang benar atau salah, kecuali hasil Confirm (benar/belum tepat). |
+| **Bantuan** | Siswa mengetahui bagian mana yang salah dan benar (lihat asumsi A3 di `04-rules-design.md`). |
+| **Analitik sosial** | Perilaku seperti standar, ditambah tampilan perbandingan pilihan kelompok (detail di `02-flows.md` §2). |
+
+Siswa memilih salah satu dari ketiganya setiap kali menekan sebuah ujian. Untuk sesi baru, mode itu langsung berlaku. Untuk sesi yang sedang berjalan, mode lama tetap dipakai kecuali siswa memilih mode lain dan mengonfirmasi perubahannya (lihat `02-flows.md` §1, langkah 2).
