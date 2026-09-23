@@ -4,16 +4,23 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/mulkihakim/nalar/backend/internal/db"
-	"github.com/mulkihakim/nalar/backend/internal/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
+	"github.com/mulkihakim/nalar/backend/internal/db"
+	"github.com/mulkihakim/nalar/backend/internal/middleware"
+	"github.com/mulkihakim/nalar/backend/internal/user"
 )
 
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("no .env file found, using system env")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "nalar-default-secret-change-in-production"
 	}
 
 	gormDB, err := db.Connect(os.Getenv("DATABASE_URL"))
@@ -22,8 +29,13 @@ func main() {
 	}
 
 	userRepo := user.NewRepository(gormDB)
-	userSvc := user.NewService(userRepo)
-	userHandler := user.NewHandler(userSvc)
+	userSvc := user.NewService(userRepo, []byte(jwtSecret))
+
+	authMiddleware := middleware.Auth([]byte(jwtSecret))
+	// Rate limit login: maks 5 percobaan per menit per IP
+	loginRateLimiter := middleware.RateLimit(5, time.Minute)
+
+	userHandler := user.NewHandler(userSvc, authMiddleware, loginRateLimiter)
 
 	r := chi.NewRouter()
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

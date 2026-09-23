@@ -18,6 +18,8 @@ PRD asli (`PRD.md`) dipecah jadi beberapa file fokus di folder ini, supaya konte
 | [`04-architecture.md`](./04-architecture.md) | Model data (ERD + skema tabel), constraint database, ringkasan kontrak API | Membuat migrasi DB, model/struct Go, atau memanggil API dari React/Kotlin |
 | [`05-rules.md`](./05-rules.md) | Aturan non-fungsional (keamanan, privasi, keandalan, UX mobile), asumsi produk (A1–A9) | Selalu jadi rujukan default — dipakai saat ada keputusan teknis yang tidak eksplisit di file lain |
 | [`06-tasks.md`](./06-tasks.md) | Rencana kerja 2–3 hari per platform, urutan pemotongan fitur jika waktu mepet, kriteria penerimaan (Definition of Done) | Merencanakan urutan kerja, atau memverifikasi sebuah fitur benar-benar selesai |
+| [`07-tech-stack.md`](./07-tech-stack.md) | Library/framework yang sudah terinstal (Go, React, Kotlin) & struktur folder wajib | Setup dependency baru, atau ragu library apa yang harus dipakai |
+| [`08-progress-log.md`](./08-progress-log.md) | Riwayat implementasi tiap fitur, keputusan yang diambil saat coding, status Definition of Done | **Setelah** selesai satu fitur (agent wajib update), atau sebelum lanjut fitur yang berkaitan |
 
 ## Cara memakai saat memberi instruksi ke agent
 

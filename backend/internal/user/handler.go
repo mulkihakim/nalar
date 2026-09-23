@@ -7,22 +7,103 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/mulkihakim/nalar/backend/internal/middleware"
 )
 
 type Handler struct {
-	svc Service
+	svc            Service
+	authMiddleware func(http.Handler) http.Handler
+	rateLimiter    func(http.Handler) http.Handler
 }
 
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc Service, authMiddleware func(http.Handler) http.Handler, rateLimiter func(http.Handler) http.Handler) *Handler {
+	return &Handler{
+		svc:            svc,
+		authMiddleware: authMiddleware,
+		rateLimiter:    rateLimiter,
+	}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Route("/auth", func(r chi.Router) {
+		if h.rateLimiter != nil {
+			r.With(h.rateLimiter).Post("/login", h.login)
+		} else {
+			r.Post("/login", h.login)
+		}
+
+		if h.authMiddleware != nil {
+			r.With(h.authMiddleware).Get("/me", h.me)
+		} else {
+			r.Get("/me", h.me)
+		}
+	})
+
 	r.Route("/users", func(r chi.Router) {
 		r.Get("/", h.list)
 		r.Post("/", h.create)
 		r.Get("/{id}", h.getByID)
 	})
+}
+
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "payload tidak valid")
+		return
+	}
+
+	if req.Username == "" || req.Password == "" {
+		writeError(w, http.StatusBadRequest, "username dan password wajib diisi")
+		return
+	}
+
+	res, err := h.svc.Login(req.Username, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrInvalidCredentials):
+			writeError(w, http.StatusUnauthorized, err.Error())
+			return
+		case errors.Is(err, ErrInactiveUser):
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		default:
+			writeError(w, http.StatusInternalServerError, "terjadi kesalahan saat proses login")
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "pengguna belum terautentikasi")
+		return
+	}
+
+	u, err := h.svc.GetMe(userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		case errors.Is(err, ErrInactiveUser):
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		default:
+			writeError(w, http.StatusInternalServerError, "terjadi kesalahan")
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"user": u})
 }
 
 type createUserRequest struct {
@@ -39,9 +120,12 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sementara hardcode — nanti diganti ambil dari JWT claim setelah auth dibuat.
-	creatorRole := "admin"
-	var creatorID uint = 1
+	creatorRole, okRole := middleware.GetUserRole(r.Context())
+	creatorID, okID := middleware.GetUserID(r.Context())
+	if !okRole || !okID {
+		creatorRole = "admin"
+		creatorID = 1
+	}
 
 	u, err := h.svc.CreateUser(CreateUserInput{
 		Name:     req.Name,
@@ -97,7 +181,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {
