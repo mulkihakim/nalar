@@ -102,7 +102,7 @@ erDiagram
 ## 2. Constraint penting
 
 - `options.type` dan `attempt_logs.slot` bernilai `ground` atau `warrant`, dan harus sama.
-- Satu argumen: tepat 4 opsi ground dan 4 warrant, masing-masing tepat 1 `is_correct = true`.
+- Satu argumen: minimal 3 opsi ground dan 3 warrant (berarti minimal 2 salah dan 1 benar per jenis), masing-masing tepat 1 `is_correct = true`.
 - `sessions`: maksimal **satu baris dengan `status = 'in_progress'`** per (`exam_id`, `student_id`); sesi baru hanya dibuat kalau tidak ada baris `in_progress` untuk pasangan itu. `attempt_no` naik otomatis per (`exam_id`, `student_id`).
 - `session_arguments`: unik pada (`session_id`, `argument_id`); jumlah baris per sesi ≤ `exams.arguments_per_session`; ditulis sekali saat sesi dibuat dan tidak berubah selama sesi itu berjalan.
 - `argument_progress`: unik pada (`session_id`, `argument_id`); `argument_id` harus ada di `session_arguments` sesi yang sama.

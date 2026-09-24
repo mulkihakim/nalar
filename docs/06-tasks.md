@@ -13,7 +13,7 @@
 ## 2. Kriteria penerimaan (contoh — jadikan test/acceptance check)
 
 1. Asesor tidak bisa melihat/mengubah kelas, materi, atau ujian milik asesor lain (diuji otomatis).
-2. Membuat argumen dengan jumlah opsi bukan 4+4, atau jumlah jawaban benar bukan 1+1, ditolak dengan pesan jelas.
+2. Membuat argumen dengan jumlah opsi kurang dari 3 ground atau 3 warrant (minimal 2 salah 1 benar), atau jumlah jawaban benar bukan 1+1, ditolak dengan pesan jelas.
 3. Siswa yang tidak terdaftar pada ujian, atau ujian nonaktif, mendapat 403/404.
 4. Respons klien siswa pada mode standar tidak berisi `is_correct`.
 5. Siswa tidak dapat membuka argumen ke-N sebelum argumen ke-(N-1) selesai **dalam sesi yang sama**.

@@ -69,7 +69,7 @@ Prioritas: **Must** (wajib untuk demo), **Should** (penting tapi bisa dipotong j
 | F-01 | Login/logout, role-based access | Must | Semua |
 | F-02 | Admin kelola asesor; admin/asesor buat siswa | Must | Web |
 | F-03 | CRUD kelas dan anggota kelas | Must | Web |
-| F-04 | CRUD materi dan argumen (claim + 4 ground + 4 warrant, validasi) | Must | Web |
+| F-04 | CRUD materi dan argumen (claim + min 3 ground + min 3 warrant [1 benar], validasi) | Must | Web |
 | F-05 | CRUD ujian: pilih materi, aktif/nonaktif, atur akses kelas/siswa, atur `arguments_per_session` | Must | Web |
 | F-06 | Siswa melihat daftar ujian yang boleh diakses | Must | Mobile |
 | F-07 | Siswa memilih mode, lalu server membuat sesi baru (subset argumen acak) atau melanjutkan sesi berjalan | Must | Mobile + backend |

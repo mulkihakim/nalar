@@ -53,9 +53,12 @@ Unit test ditaruh di folder domain yang sama, mengikuti konvensi Go (`service_te
 | UI Kit | **shadcn/ui + Tailwind CSS** | **Menggantikan Chakra UI.** Alasan: komponen di-*copy* ke repo (bukan dependency tertutup), gampang dikustomisasi, dan jadi standar de-facto di ekosistem React+Tailwind saat ini |
 | Routing | `@tanstack/react-router` | Type-safe, sudah terpasang |
 | Data fetching | `@tanstack/react-query` | **Wajib** dipakai untuk semua panggilan API ke backend (GET/POST dsb) — jangan `fetch` manual di `useEffect` |
-| Form + validasi | `react-hook-form` + `zod` (resolver) | Skema zod idealnya mencerminkan validasi server (misal 4 ground + 4 warrant di `03-architecture.md`) supaya pesan error konsisten |
+| Form + validasi | `react-hook-form` + `zod` (resolver) | Skema zod mencerminkan validasi server (misal minimal 3 ground [1 benar] + 3 warrant [1 benar] di `03-architecture.md`) supaya pesan error konsisten |
 
-> **Aksi yang perlu dilakukan:** hapus `@chakra-ui/react` dari `package.json`, install `tailwindcss` + jalankan `npx shadcn@latest init`. Import komponen (`Button`, `Input`, dst) lewat shadcn generator, bukan lewat npm package biasa.
+> [!IMPORTANT]
+> **Aturan Wajib `components/ui/`**: Seluruh komponen di dalam `web/src/components/ui/` **HANYA** boleh berasal dari generator shadcn CLI (`npx shadcn@latest add <component>`). Agent coding **DILARANG KERAS** membuat file baru secara manual atau mengedit langsung file di dalam `components/ui/`. Jika memerlukan modifikasi perilaku/tampilan atau wrapper, buat komponen baru di luar folder tersebut (misal di `components/` atau `features/*/components/`).
+> Saat logout, hapus data, atau konfirmasi penting, wajib gunakan komponen `alert-dialog` dari shadcn.
+> Untuk input pilihan/dropdown, gunakan `select` atau `dropdown-menu` dari shadcn.
 
 ### 2.1 Struktur folder (wajib diikuti — belum ada di proyek, buat baru)
 
