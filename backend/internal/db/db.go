@@ -5,6 +5,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/mulkihakim/nalar/backend/internal/class"
+	"github.com/mulkihakim/nalar/backend/internal/exam"
+	"github.com/mulkihakim/nalar/backend/internal/material"
+	"github.com/mulkihakim/nalar/backend/internal/session"
+	"github.com/mulkihakim/nalar/backend/internal/user"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -49,4 +54,39 @@ func Connect(dsn string) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	return gormDB, nil
+}
+
+// AutoMigrate mendaftarkan semua struct model GORM agar tabel dibuat/diperbarui otomatis
+func AutoMigrate(gormDB *gorm.DB) error {
+	return gormDB.AutoMigrate(
+		&user.User{},
+		&class.Class{},
+		&class.ClassMember{},
+		&material.Material{},
+		&material.Argument{},
+		&material.Option{},
+		&exam.Exam{},
+		&exam.ExamClass{},
+		&exam.ExamStudent{},
+		&session.Session{},
+		&session.SessionArgument{},
+		&session.AttemptLog{},
+		&session.ArgumentProgress{},
+	)
+}
+
+// DropAllTables membersihkan seluruh tabel di schema public (cocok untuk PostgreSQL)
+func DropAllTables(gormDB *gorm.DB) error {
+	return gormDB.Exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;").Error
+}
+
+// ResetAndMigrate melakukan drop all tables dan migrasi ulang dari model (mirip php artisan migrate:fresh)
+func ResetAndMigrate(gormDB *gorm.DB) error {
+	if err := DropAllTables(gormDB); err != nil {
+		return fmt.Errorf("failed to drop tables: %w", err)
+	}
+	if err := AutoMigrate(gormDB); err != nil {
+		return fmt.Errorf("failed to auto migrate: %w", err)
+	}
+	return nil
 }
