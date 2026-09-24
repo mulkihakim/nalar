@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { createRootRoute, Outlet, Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { BookOpen, Users, GraduationCap, ClipboardList, LogOut, PanelLeft, X } from 'lucide-react'
+import { BookOpen, Users, GraduationCap, ClipboardList, LogOut, PanelLeft, X, FileText, CheckSquare, BarChart2 } from 'lucide-react'
 import { useAuth } from '../features/auth/context'
 import { Button } from '../components/ui/button'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Toaster } from '../components/ui/sonner'
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -16,6 +18,7 @@ function RootComponent() {
   // State terpisah untuk desktop (collapse side-by-side) dan mobile (drawer overlay)
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false)
 
   // Tutup drawer mobile saat berpindah halaman
   useEffect(() => {
@@ -27,15 +30,21 @@ function RootComponent() {
     (!isAuthenticated && routerState.location.pathname === '/')
 
   const handleLogout = () => {
+    setIsLogoutDialogOpen(true)
+  }
+
+  const confirmLogout = () => {
     logout()
+    setIsLogoutDialogOpen(false)
     navigate({ to: '/login' })
   }
 
-  // Sesuai 09-design.md §4a: Halaman auth standalone tanpa chrome aplikasi
+  // Sesuai 04-rules-design.md §B.4a: Halaman auth standalone tanpa chrome aplikasi
   if (isAuthPage) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-slate-50 p-4 overflow-hidden">
         <Outlet />
+        <Toaster richColors position="top-right" />
       </div>
     )
   }
@@ -53,21 +62,48 @@ function RootComponent() {
       {(user?.role === 'admin' || user?.role === 'asesor') && (
         <>
           <Link
-            to="/admin/users"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-            activeProps={{ className: 'bg-indigo-50 text-indigo-600 font-semibold shadow-xs' }}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span>Pengguna</span>
-          </Link>
-
-          <Link
             to="/admin/classes"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             activeProps={{ className: 'bg-indigo-50 text-indigo-600 font-semibold shadow-xs' }}
           >
             <GraduationCap className="w-4 h-4 shrink-0" />
             <span>Kelas</span>
+          </Link>
+
+          <Link
+            to="/admin/materials"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            activeProps={{ className: 'bg-indigo-50 text-indigo-600 font-semibold shadow-xs' }}
+          >
+            <FileText className="w-4 h-4 shrink-0" />
+            <span>Materi & Argumen</span>
+          </Link>
+
+          <Link
+            to="/admin/exams"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            activeProps={{ className: 'bg-indigo-50 text-indigo-600 font-semibold shadow-xs' }}
+          >
+            <CheckSquare className="w-4 h-4 shrink-0" />
+            <span>Paket Ujian</span>
+          </Link>
+
+          <Link
+            to="/admin/results"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            activeProps={{ className: 'bg-indigo-50 text-indigo-600 font-semibold shadow-xs' }}
+          >
+            <BarChart2 className="w-4 h-4 shrink-0" />
+            <span>Hasil Ujian</span>
+          </Link>
+
+          <Link
+            to="/admin/users"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            activeProps={{ className: 'bg-indigo-50 text-indigo-600 font-semibold shadow-xs' }}
+          >
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Pengguna</span>
           </Link>
         </>
       )}
@@ -227,6 +263,18 @@ function RootComponent() {
           </footer>
         </main>
       </div>
+
+      <ConfirmDialog
+        isOpen={isLogoutDialogOpen}
+        onClose={() => setIsLogoutDialogOpen(false)}
+        onConfirm={confirmLogout}
+        title="Konfirmasi Keluar"
+        description="Apakah Anda yakin ingin keluar dari akun ini? Sesi login Anda akan diakhiri."
+        confirmText="Keluar"
+        variant="destructive"
+      />
+
+      <Toaster richColors position="top-right" />
     </div>
   )
 }

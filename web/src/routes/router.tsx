@@ -3,7 +3,11 @@ import { Route as rootRoute } from './__root'
 import { LoginPage } from './login'
 import { AdminUsersPage } from './admin/users'
 import { AdminClassesPage } from './admin/classes'
+import { AdminMaterialsPage } from './admin/materials'
+import { AdminExamsPage } from './admin/exams'
+import { AdminResultsPage } from './admin/results'
 import { StudentExamsPage } from './student/exams'
+import { StudentExamPage } from './student/exam.$examId'
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -29,10 +33,34 @@ const adminClassesRoute = createRoute({
   component: AdminClassesPage,
 })
 
+const adminMaterialsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/materials',
+  component: AdminMaterialsPage,
+})
+
+const adminExamsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/exams',
+  component: AdminExamsPage,
+})
+
+const adminResultsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/results',
+  component: AdminResultsPage,
+})
+
 const studentExamsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/student/exams',
   component: StudentExamsPage,
+})
+
+const studentExamDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/student/exam/$examId',
+  component: StudentExamPage,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -40,7 +68,11 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   adminUsersRoute,
   adminClassesRoute,
+  adminMaterialsRoute,
+  adminExamsRoute,
+  adminResultsRoute,
   studentExamsRoute,
+  studentExamDetailRoute,
 ])
 
 export const router = createRouter({
