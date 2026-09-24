@@ -40,9 +40,15 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	})
 
 	r.Route("/users", func(r chi.Router) {
+		if h.authMiddleware != nil {
+			r.Use(h.authMiddleware)
+		}
+		r.Use(middleware.RequireRole("admin", "asesor"))
 		r.Get("/", h.list)
 		r.Post("/", h.create)
 		r.Get("/{id}", h.getByID)
+		r.Patch("/{id}", h.update)
+		r.Delete("/{id}", h.delete)
 	})
 }
 
@@ -170,12 +176,88 @@ func (h *Handler) getByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
-	users, err := h.svc.ListUsers()
+	role := r.URL.Query().Get("role")
+	requesterRole, _ := middleware.GetUserRole(r.Context())
+
+	users, err := h.svc.ListUsers(role, requesterRole)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "terjadi kesalahan")
 		return
 	}
 	writeJSON(w, http.StatusOK, users)
+}
+
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "id tidak valid")
+		return
+	}
+
+	requesterRole, okRole := middleware.GetUserRole(r.Context())
+	requesterID, okID := middleware.GetUserID(r.Context())
+	if !okRole || !okID {
+		writeError(w, http.StatusUnauthorized, "pengguna belum terautentikasi")
+		return
+	}
+
+	err = h.svc.DeleteUser(uint(id), requesterRole, requesterID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		case errors.Is(err, ErrUnauthorizedAccess):
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		case errors.Is(err, ErrUserHasExamRecords):
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		default:
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "pengguna berhasil dihapus secara permanen"})
+}
+
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "id tidak valid")
+		return
+	}
+
+	var req UpdateUserInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "payload tidak valid")
+		return
+	}
+
+	updaterRole, okRole := middleware.GetUserRole(r.Context())
+	updaterID, okID := middleware.GetUserID(r.Context())
+	if !okRole || !okID {
+		writeError(w, http.StatusUnauthorized, "pengguna belum terautentikasi")
+		return
+	}
+
+	u, err := h.svc.UpdateUser(uint(id), req, updaterRole, updaterID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		case errors.Is(err, ErrUnauthorizedAccess):
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		default:
+			writeError(w, http.StatusInternalServerError, "terjadi kesalahan saat memperbarui pengguna")
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, u)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

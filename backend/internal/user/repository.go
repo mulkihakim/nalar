@@ -12,6 +12,8 @@ type Repository interface {
 	FindByUsername(username string) (*User, error)
 	List() ([]User, error)
 	Update(u *User) error
+	Delete(id uint) error
+	HasExamSessions(userID uint) (bool, error)
 }
 
 type gormRepository struct {
@@ -58,4 +60,17 @@ func (r *gormRepository) List() ([]User, error) {
 
 func (r *gormRepository) Update(u *User) error {
 	return r.db.Save(u).Error
+}
+
+func (r *gormRepository) Delete(id uint) error {
+	return r.db.Delete(&User{}, id).Error
+}
+
+func (r *gormRepository) HasExamSessions(userID uint) (bool, error) {
+	if !r.db.Migrator().HasTable("sessions") {
+		return false, nil
+	}
+	var count int64
+	err := r.db.Table("sessions").Where("student_id = ?", userID).Count(&count).Error
+	return count > 0, err
 }

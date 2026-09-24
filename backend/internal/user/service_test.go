@@ -26,7 +26,9 @@ func (m *mockUserRepository) Create(u *user.User) error {
 	if _, exists := m.usersByUsername[u.Username]; exists {
 		return errors.New("duplicate username")
 	}
-	u.ID = uint(len(m.usersByID) + 1)
+	if u.ID == 0 {
+		u.ID = uint(len(m.usersByID) + 1)
+	}
 	m.usersByID[u.ID] = u
 	m.usersByUsername[u.Username] = u
 	return nil
@@ -60,6 +62,22 @@ func (m *mockUserRepository) Update(u *user.User) error {
 	m.usersByID[u.ID] = u
 	m.usersByUsername[u.Username] = u
 	return nil
+}
+
+func (m *mockUserRepository) Delete(id uint) error {
+	if u, exists := m.usersByID[id]; exists {
+		delete(m.usersByUsername, u.Username)
+		delete(m.usersByID, id)
+	}
+	return nil
+}
+
+func (m *mockUserRepository) HasExamSessions(userID uint) (bool, error) {
+	// Misal user 99 punya session
+	if userID == 99 {
+		return true, nil
+	}
+	return false, nil
 }
 
 func setupTestService(t *testing.T) (user.Service, *mockUserRepository, []byte) {
@@ -213,5 +231,75 @@ func TestGetMe_InactiveUser(t *testing.T) {
 
 	if !errors.Is(err, user.ErrInactiveUser) {
 		t.Errorf("expected ErrInactiveUser, got %v", err)
+	}
+}
+
+func TestListUsers_AsesorHidesAdmin(t *testing.T) {
+	svc, repo, _ := setupTestService(t)
+
+	// Tambah 1 admin
+	_ = repo.Create(&user.User{
+		Name:     "Admin Boss",
+		Username: "admin_boss",
+		Role:     "admin",
+		IsActive: true,
+	})
+
+	// 1. Asesor meminta list user -> admin_boss TIDAK BOLEH muncul
+	usersForAsesor, err := svc.ListUsers("", "asesor")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, u := range usersForAsesor {
+		if u.Role == "admin" {
+			t.Errorf("asesor should not see admin in user list, but found: %s", u.Username)
+		}
+	}
+
+	// 2. Admin meminta list user -> admin_boss HARUS muncul
+	usersForAdmin, err := svc.ListUsers("", "admin")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	hasAdmin := false
+	for _, u := range usersForAdmin {
+		if u.Role == "admin" {
+			hasAdmin = true
+			break
+		}
+	}
+	if !hasAdmin {
+		t.Errorf("admin should see other admins in user list")
+	}
+}
+
+func TestDeleteUser_Rules(t *testing.T) {
+	svc, repo, _ := setupTestService(t)
+
+	// User tanpa ujian (ID 2: siswa_siti)
+	siti, _ := repo.FindByUsername("siswa_siti")
+
+	// 1. Asesor mencoba hard delete -> Harus ditolak (ErrUnauthorizedAccess)
+	err := svc.DeleteUser(siti.ID, "asesor", 1)
+	if !errors.Is(err, user.ErrUnauthorizedAccess) {
+		t.Errorf("expected ErrUnauthorizedAccess for non-admin delete, got %v", err)
+	}
+
+	// 2. Admin mencoba hapus user dengan session (ID 99) -> Harus ditolak (ErrUserHasExamRecords)
+	_ = repo.Create(&user.User{
+		ID:       99,
+		Name:     "Siswa Berpengalaman",
+		Username: "siswa_exam",
+		Role:     "siswa",
+	})
+	err = svc.DeleteUser(99, "admin", 1)
+	if !errors.Is(err, user.ErrUserHasExamRecords) {
+		t.Errorf("expected ErrUserHasExamRecords, got %v", err)
+	}
+
+	// 3. Admin hapus user tanpa ujian -> Harus sukses
+	err = svc.DeleteUser(siti.ID, "admin", 1)
+	if err != nil {
+		t.Errorf("expected admin to successfully delete user without exam records, got %v", err)
 	}
 }

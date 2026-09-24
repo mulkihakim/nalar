@@ -15,6 +15,8 @@ var (
 	ErrInvalidCredentials = errors.New("username atau password salah")
 	ErrInactiveUser       = errors.New("akun tidak aktif")
 	ErrUserNotFound       = errors.New("user tidak ditemukan")
+	ErrUnauthorizedAccess = errors.New("tidak memiliki izin untuk mengubah data pengguna ini")
+	ErrUserHasExamRecords = errors.New("pengguna tidak dapat dihapus permanen karena telah memiliki riwayat pengerjaan ujian")
 )
 
 type CreateUserInput struct {
@@ -24,6 +26,12 @@ type CreateUserInput struct {
 	Role     string // "admin" | "asesor" | "siswa"
 }
 
+type UpdateUserInput struct {
+	Name     *string `json:"name"`
+	Password *string `json:"password"`
+	IsActive *bool   `json:"is_active"`
+}
+
 type LoginResponse struct {
 	Token string `json:"token"`
 	User  *User  `json:"user"`
@@ -31,11 +39,13 @@ type LoginResponse struct {
 
 type Service interface {
 	CreateUser(input CreateUserInput, creatorRole string, creatorID uint) (*User, error)
+	UpdateUser(id uint, input UpdateUserInput, updaterRole string, updaterID uint) (*User, error)
+	DeleteUser(id uint, requesterRole string, requesterID uint) error
 	Authenticate(username, password string) (*User, error)
 	Login(username, password string) (*LoginResponse, error)
 	GetMe(userID uint) (*User, error)
 	GetByID(id uint) (*User, error)
-	ListUsers() ([]User, error)
+	ListUsers(roleFilter string, requesterRole ...string) ([]User, error)
 }
 
 type service struct {
@@ -153,8 +163,103 @@ func (s *service) GetByID(id uint) (*User, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *service) ListUsers() ([]User, error) {
-	return s.repo.List()
+func (s *service) UpdateUser(id uint, input UpdateUserInput, updaterRole string, updaterID uint) (*User, error) {
+	u, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if u == nil {
+		return nil, ErrUserNotFound
+	}
+
+	// Otorisasi:
+	// Admin boleh ubah siapa pun.
+	// Asesor hanya boleh ubah akun siswa yang ia buat (created_by == updaterID).
+	if updaterRole == "asesor" {
+		if u.Role != "siswa" || u.CreatedBy == nil || *u.CreatedBy != updaterID {
+			return nil, ErrUnauthorizedAccess
+		}
+	} else if updaterRole != "admin" {
+		return nil, ErrUnauthorizedAccess
+	}
+
+	if input.Name != nil && *input.Name != "" {
+		u.Name = *input.Name
+	}
+	if input.IsActive != nil {
+		u.IsActive = *input.IsActive
+	}
+	if input.Password != nil && *input.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(*input.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		u.PasswordHash = string(hash)
+	}
+
+	if err := s.repo.Update(u); err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (s *service) DeleteUser(id uint, requesterRole string, requesterID uint) error {
+	// Hanya role admin yang boleh hard delete
+	if requesterRole != "admin" {
+		return ErrUnauthorizedAccess
+	}
+
+	// Tidak boleh menghapus diri sendiri
+	if id == requesterID {
+		return errors.New("tidak dapat menghapus akun Anda sendiri")
+	}
+
+	u, err := s.repo.FindByID(id)
+	if err != nil {
+		return err
+	}
+	if u == nil {
+		return ErrUserNotFound
+	}
+
+	// Cek apakah pengguna telah memiliki riwayat sesi ujian
+	hasSessions, err := s.repo.HasExamSessions(id)
+	if err != nil {
+		return err
+	}
+	if hasSessions {
+		return ErrUserHasExamRecords
+	}
+
+	return s.repo.Delete(id)
+}
+
+func (s *service) ListUsers(roleFilter string, requesterRole ...string) ([]User, error) {
+	users, err := s.repo.List()
+	if err != nil {
+		return nil, err
+	}
+
+	reqRole := ""
+	if len(requesterRole) > 0 {
+		reqRole = requesterRole[0]
+	}
+
+	var filtered []User
+	for _, u := range users {
+		// Jika requester adalah asesor, JANGAN tampilkan admin di atasnya!
+		if reqRole == "asesor" && u.Role == "admin" {
+			continue
+		}
+
+		if roleFilter != "" && u.Role != roleFilter {
+			continue
+		}
+
+		filtered = append(filtered, u)
+	}
+
+	return filtered, nil
 }
 
 // canCreateRole menegakkan tabel hak akses di 01-overview.md §3:
