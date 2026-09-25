@@ -34,6 +34,10 @@ class TokenManager(private val context: Context) {
         preferences[USER_NAME_KEY]
     }
 
+    val username: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[USER_USERNAME_KEY]
+    }
+
     suspend fun saveAuth(token: String, user: UserDto) {
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token

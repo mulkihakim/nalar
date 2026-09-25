@@ -22,61 +22,81 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mulki.nalar.core.auth.TokenManager
+import com.mulki.nalar.core.network.ApiService
 import com.mulki.nalar.core.network.NetworkModule
 import com.mulki.nalar.feature.auth.LoginScreen
 import com.mulki.nalar.feature.auth.LoginViewModel
+import com.mulki.nalar.feature.navigation.NalarApp
 import com.mulki.nalar.ui.theme.NalarTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var tokenManager: TokenManager
+    private lateinit var apiService: ApiService
 
     private val loginViewModel: LoginViewModel by viewModels {
-        val apiService = NetworkModule.provideApiService(tokenManager)
         LoginViewModel.Factory(apiService, tokenManager)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         tokenManager = TokenManager(applicationContext)
+        apiService = NetworkModule.provideApiService(tokenManager)
 
         enableEdgeToEdge()
         setContent {
             NalarTheme {
                 val token by tokenManager.token.collectAsState(initial = null)
                 val userName by tokenManager.userName.collectAsState(initial = null)
+                val username by tokenManager.username.collectAsState(initial = null)
                 val userRole by tokenManager.role.collectAsState(initial = null)
                 val scope = rememberCoroutineScope()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    if (token.isNullOrBlank()) {
+                if (token.isNullOrBlank()) {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                         LoginScreen(
                             viewModel = loginViewModel,
                             onLoginSuccess = { _ ->
-                                // Auth token tersimpan di DataStore
+                                // Token otomatis tersimpan di DataStore
                             },
                             modifier = Modifier.padding(innerPadding)
                         )
-                    } else {
-                        AuthenticatedHome(
+                    }
+                } else if (!userRole.isNullOrBlank() && userRole != "siswa") {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                        NonStudentNoticeScreen(
                             name = userName ?: "Pengguna",
-                            role = userRole ?: "siswa",
+                            role = userRole ?: "",
                             onLogout = {
                                 scope.launch {
                                     tokenManager.clearAuth()
+                                    loginViewModel.resetState()
                                 }
                             },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
+                } else {
+                    NalarApp(
+                        apiService = apiService,
+                        userName = userName ?: "Siswa",
+                        username = username ?: "siswa",
+                        userRole = userRole ?: "siswa",
+                        onLogout = {
+                            scope.launch {
+                                tokenManager.clearAuth()
+                                loginViewModel.resetState()
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -84,7 +104,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AuthenticatedHome(
+private fun NonStudentNoticeScreen(
     name: String,
     role: String,
     onLogout: () -> Unit,
@@ -100,8 +120,9 @@ fun AuthenticatedHome(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -111,31 +132,23 @@ fun AuthenticatedHome(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Selamat Datang!",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = "Halo, $name",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Akun Anda memiliki peran ${role.uppercase()}. Aplikasi mobile Nalar dikhususkan untuk Siswa mengerjakan latihan. Silakan gunakan Nalar versi Web untuk mengakses panel pengelolaan Admin/Asesor.",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = name,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Peran: ${role.uppercase()}",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
+                Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = onLogout,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 48.dp) // Area sentuh minimal 48dp (05-rules.md §1)
+                        .heightIn(min = 48.dp)
                 ) {
-                    Text("Keluar (Logout)")
+                    Text("Keluar & Ganti Akun Siswa")
                 }
             }
         }

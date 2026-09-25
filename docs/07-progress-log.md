@@ -31,6 +31,48 @@ Tambahkan **di paling atas** bagian `## Log`, format singkat:
 
 <!-- Entri terbaru ditambahkan di bawah baris ini, urutan terbaru dulu -->
 
+### 2026-09-25 — Fase 4: Implementasi Mobile Android Lengkap Siswa (F-06 s/d F-12)
+- **Status:** selesai
+- **File dibuat/diubah:**
+  - `mobile/gradle/libs.versions.toml` (tambah androidx-navigation-compose)
+  - `mobile/app/build.gradle.kts`
+  - `mobile/app/src/main/java/com/mulki/nalar/ui/theme/` (Color.kt, Theme.kt, Type.kt)
+  - `mobile/app/src/main/java/com/mulki/nalar/core/auth/TokenManager.kt`
+  - `mobile/app/src/main/java/com/mulki/nalar/core/network/ApiService.kt`
+  - `mobile/app/src/main/java/com/mulki/nalar/core/network/dto/` (ExamDto.kt, SessionDto.kt)
+  - `mobile/app/src/main/java/com/mulki/nalar/feature/navigation/NalarNavigation.kt`
+  - `mobile/app/src/main/java/com/mulki/nalar/feature/examlist/` (ExamListScreen.kt, ExamListViewModel.kt)
+  - `mobile/app/src/main/java/com/mulki/nalar/feature/session/` (ModeSelectDialog.kt, ModeConfirmDialog.kt, SessionViewModel.kt)
+  - `mobile/app/src/main/java/com/mulki/nalar/feature/argument/` (ArgumentScreen.kt, ArgumentViewModel.kt, OptionBottomSheet.kt, ConfirmResultDialog.kt, MonitoringView.kt, MaterialReadScreen.kt)
+  - `mobile/app/src/main/java/com/mulki/nalar/feature/result/` (ResultScreen.kt, ResultViewModel.kt, SessionSummaryScreen.kt, AnalysisScreen.kt)
+  - `mobile/app/src/main/java/com/mulki/nalar/feature/profile/ProfileScreen.kt`
+  - `mobile/app/src/main/java/com/mulki/nalar/MainActivity.kt`
+- **Keputusan:**
+  - Menambahkan pustaka resmi `androidx.navigation:navigation-compose:2.7.7` ke `libs.versions.toml` dan `build.gradle.kts` untuk navigasi multi-screen deklaratif berbasis NavHost.
+  - Memetakan token warna Nalar (04-rules-design.md §B.2) langsung ke slot MaterialTheme.colorScheme (`primary` = Indigo-600, `secondary` = Emerald-600 success, `tertiary` = Amber-600 warning, `error` = Red-600 danger) sehingga seluruh Composable konsisten tanpa hardcode warna individual.
+  - Sesuai 02-flows.md §1.4b, interaksi pengerjaan argumen di mobile menerapkan vertikal tap-to-select (slot Ground di atas, slot Warrant di bawah) yang membuka Material3 ModalBottomSheet.
+  - Setiap kali siswa memilih opsi dari bottom sheet, dicatat drop attempt log ke backend (POST /sessions/:id/arguments/:aid/drops). Menutup sheet tanpa memilih tidak mencatat log (asumsi A6).
+  - Evaluasi confirm dinilai di server. Di mode bantuan, bagian ground/warrant yang tepat/salah ditampilkan; di mode standar dan sosial, detail tidak dibocorkan.
+  - Pada mode analitik sosial, monitoring rasio X:Y ditampilkan setelah setiap argumen selesai, dan analisis rasio A:B ditampilkan setelah sesi selesai.
+  - Riwayat hasil menampilkan detail per argumen beserta penanda "Tanpa Salah ✓" jika diselesaikan tepat 2 percobaan.
+- **Deviasi:** tidak ada.
+- **DoD:**
+  - DoD #4 (respons mode standar tidak membocorkan is_correct) → ✅
+  - DoD #5 (argumen harus berurutan) → ✅
+  - DoD #6 (setiap drop menambah attempt_logs) → ✅
+  - DoD #7 (monitoring ratio X:Y) → ✅
+  - DoD #8 (analysis ratio A:B) → ✅
+  - DoD #9 (opsi tanpa pemilih menampilkan Y = -) → ✅
+  - DoD #10 (sembunyikan data kelompok jika peers < MIN_PEERS) → ✅
+  - DoD #11 (attempt_no bertambah & subset diacak) → ✅
+  - DoD #12 (sesi berjalan dilanjutkan jika mode sama) → ✅
+  - DoD #13 (status 409 jika mode beda + konfirmasi ganti mode) → ✅
+  - Area sentuh minimum 48dp (04-rules-design.md §A.1) → ✅
+- **Test:**
+  - `mobile`: `.\gradlew compileDebugKotlin` (BUILD SUCCESSFUL 100%, 0 warning).
+  - `mobile`: `.\gradlew assembleDebug` (BUILD SUCCESSFUL 100%, APK debug siap).
+- **TODO:** tidak ada.
+
 ### 2026-09-24 — Penyempurnaan Monitoring Dialog (HoverCard) & Notifikasi Toast CRUD (Sonner)
 - **Status:** selesai
 - **File dibuat/diubah:**
