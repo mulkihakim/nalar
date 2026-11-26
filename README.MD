@@ -1,6 +1,6 @@
 # 🧠 Nalar — Platform Latihan Argumentasi Berbasis Model Toulmin
 
-**Nalar** `hard r` adalah platform pembelajaran interaktif (Web & Mobile Android) yang dirancang untuk membantu siswa memahami dan melatih cara menyusun struktur argumen yang logis dan kritis menggunakan **Model Argumentasi Toulmin (*Toulmin's Model of Argumentation*)**.
+**Nalar** adalah platform pembelajaran interaktif (Web & Mobile Android) yang dirancang untuk membantu siswa memahami dan melatih cara menyusun struktur argumen yang logis dan kritis menggunakan **Model Argumentasi Toulmin (*Toulmin's Model of Argumentation*)**.
 
 ---
 
